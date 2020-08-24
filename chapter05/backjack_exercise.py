@@ -55,6 +55,28 @@ def deal_card(hand, ace):
     return new_hand, new_ace
 
 
+def compute_reward(player_hand, dealer_hand, dealer_ace):
+    if player_hand > 21:
+        reward = -1
+    else:
+        # Dealer's round to stick on only 17 or higher
+        while dealer_hand < 17:
+            dealer_hand, dealer_ace = deal_card(
+                dealer_hand, dealer_ace)
+
+        if dealer_hand > 21:
+            reward = 1
+        else:
+            if dealer_hand > player_hand:
+                reward = -1
+            elif dealer_hand == player_hand:
+                reward = 0
+            else:
+                reward = 1
+
+    return reward
+
+
 def figure_5_1():
     plt.rc("font", size=6)
     fig = plt.figure(dpi=300)
@@ -89,25 +111,10 @@ def figure_5_1():
                 state_sequence.append((player_hand - 12, player_ace))
                 player_hand, player_ace = deal_card(player_hand, player_ace)
 
-            if player_hand > 21:
-                reward = -1
-            else:
+            if player_hand < 22:
                 state_sequence.append((player_hand - 12, player_ace))
 
-                # Dealer's round to stick on only 17 or higher
-                while dealer_hand < 17:
-                    dealer_hand, dealer_ace = deal_card(
-                        dealer_hand, dealer_ace)
-
-                if dealer_hand > 21:
-                    reward = 1
-                else:
-                    if dealer_hand > player_hand:
-                        reward = -1
-                    elif dealer_hand == player_hand:
-                        reward = 0
-                    else:
-                        reward = 1
+            reward = compute_reward(player_hand, dealer_hand, dealer_ace)
 
             for index in range(len(state_sequence) - 1, -1, -1):
                 if state_sequence[index] not in state_sequence[:index]:
@@ -143,6 +150,46 @@ def figure_5_1():
         set_axes_equal(ax)
 
     plt.savefig("./my_images/figure_5_1.png")
+
+
+def figure_5_2():
+    eps = 50000
+    policies = np.zeros(10, 10, 2)  # 0 for stick and 1 for hit
+    # player_hand, dealer_showing, usable ace, action
+    action_values = np.zeros(10, 10, 2, 2)
+    visits = np.zeros(10, 10, 2, 2)
+
+    for _ in range(eps):
+        # Exploring start
+        player_hand = np.random.randint(12, 22)
+        if np.random.randint(0, 13) == 0:
+            player_ace = 1
+        else:
+            player_ace = 0
+        policy = np.random.randint(0, 2)
+
+        # Dealer's hand
+        dealer_showing = VALUES[np.random.randint(13)]
+        if dealer_showing == 1:
+            dealer_hand = 11
+            dealer_ace = 1
+        else:
+            dealer_hand = dealer_showing
+            dealer_ace = 0
+        dealer_hand, dealer_ace = deal_card(dealer_hand, dealer_ace)
+
+        state_sequence = []
+
+        # Execute policy
+        while policy == 1 and player_hand < 22:
+            state_sequence.append((player_hand, dealer_showing, player_ace, 1))
+            player_hand, player_ace = deal_card(player_hand, player_ace)
+            policy = policies[player_hand - 12, dealer_showing, player_ace]
+
+        if player_hand < 22:
+            state_sequence.append((player_hand, dealer_showing, player_ace, 0))
+
+        reward = compute_reward(player_hand, dealer_hand, dealer_ace)
 
 
 def main():
