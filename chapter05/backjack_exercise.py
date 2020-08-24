@@ -153,13 +153,13 @@ def figure_5_1():
 
 
 def figure_5_2():
-    eps = 50000
-    policies = np.zeros(10, 10, 2)  # 0 for stick and 1 for hit
+    eps = 1000000
+    policies = np.ones((10, 10, 2))  # 0 for stick and 1 for hit
     # player_hand, dealer_showing, usable ace, action
-    action_values = np.zeros(10, 10, 2, 2)
-    visits = np.zeros(10, 10, 2, 2)
+    action_values = np.zeros((10, 10, 2, 2))
+    visits = np.zeros((10, 10, 2, 2))
 
-    for _ in range(eps):
+    for episode in tqdm(range(eps)):
         # Exploring start
         player_hand = np.random.randint(12, 22)
         if np.random.randint(0, 13) == 0:
@@ -182,18 +182,76 @@ def figure_5_2():
 
         # Execute policy
         while policy == 1 and player_hand < 22:
-            state_sequence.append((player_hand, dealer_showing, player_ace, 1))
+            state_sequence.append(
+                (player_hand - 12, dealer_showing - 1, player_ace, 1))
             player_hand, player_ace = deal_card(player_hand, player_ace)
-            policy = policies[player_hand - 12, dealer_showing, player_ace]
+            if player_hand < 22:
+                policy = policies[player_hand - 12,
+                                  dealer_showing - 1, player_ace]
 
         if player_hand < 22:
-            state_sequence.append((player_hand, dealer_showing, player_ace, 0))
+            state_sequence.append(
+                (player_hand - 12, dealer_showing - 1, player_ace, 0))
 
         reward = compute_reward(player_hand, dealer_hand, dealer_ace)
 
+        if episode % 10000 == 0:
+            print(state_sequence)
+            print(reward)
+
+        for index in range(len(state_sequence) - 1, -1, -1):
+            visits[state_sequence[index]] += 1
+            old_value = action_values[state_sequence[index]]
+            new_value = old_value + (reward - old_value) / \
+                visits[state_sequence[index]]
+            action_values[state_sequence[index]] = new_value
+
+            state_index = state_sequence[index][:3]
+            policies[state_index] = np.argmax(action_values[state_index])
+
+    state_value = np.max(action_values, axis=-1)
+
+    plt.rc("font", size=6)
+    fig = plt.figure(dpi=300)
+
+    plt.subplots_adjust(wspace=0.4, hspace=0.4)
+    ax = fig.add_subplot(2, 2, 1)
+    sns.heatmap(policies[:, :, 0], cmap="YlGnBu", ax=ax, xticklabels=range(
+        1, 11), yticklabels=range(12, 22))
+    ax.set_title("Optimal policy, no usable ace")
+    ax.set_xlabel("Dealer showing")
+    ax.set_ylabel("Player hand")
+    ax.invert_yaxis()
+
+    ax = fig.add_subplot(2, 2, 3)
+    sns.heatmap(policies[:, :, 1], cmap="YlGnBu", ax=ax, xticklabels=range(
+        1, 11), yticklabels=range(12, 22))
+    ax.set_title("Optimal policy, usable ace")
+    ax.set_xlabel("Dealer showing")
+    ax.set_ylabel("Player hand")
+    ax.invert_yaxis()
+
+    ax = fig.add_subplot(2, 2, 2)
+    sns.heatmap(state_value[:, :, 0], cmap="YlGnBu", ax=ax, xticklabels=range(
+        1, 11), yticklabels=range(12, 22))
+    ax.set_title("Action values, no usable ace")
+    ax.set_xlabel("Dealer showing")
+    ax.set_ylabel("Player hand")
+    ax.invert_yaxis()
+
+    ax = fig.add_subplot(2, 2, 4)
+    sns.heatmap(state_value[:, :, 1], cmap="YlGnBu", ax=ax, xticklabels=range(
+        1, 11), yticklabels=range(12, 22))
+    ax.set_title("Action values, usable ace")
+    ax.set_xlabel("Dealer showing")
+    ax.set_ylabel("Player hand")
+    ax.invert_yaxis()
+
+    plt.savefig("./my_images/figure_5_2.png")
+
 
 def main():
-    figure_5_1()
+    figure_5_2()
 
 
 if __name__ == "__main__":
