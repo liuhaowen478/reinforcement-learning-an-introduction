@@ -57,7 +57,7 @@ def deal_card(hand, ace):
 
 def figure_5_1():
     plt.rc("font", size=6)
-    fig = plt.figure()
+    fig = plt.figure(dpi=300)
     plt.subplots_adjust(wspace=0.4, hspace=0.4)
     fig_count = 1
 
@@ -125,7 +125,7 @@ def figure_5_1():
         x = np.linspace(1, 10, 10)
         y = np.linspace(12, 21, 10)
         X, Y = np.meshgrid(x, y)
-        ax.plot_wireframe(X, Y, values[:, :, 1])
+        ax.plot_wireframe(X, Y, values[:, :, 1], linewidth=1)
         ax.set_xlabel("Dealer showing")
         ax.set_ylabel("Player sum")
         ax.set_title(f"usable ace, {eps} episodes")
@@ -136,7 +136,7 @@ def figure_5_1():
         x = np.linspace(1, 10, 10)
         y = np.linspace(12, 21, 10)
         X, Y = np.meshgrid(x, y)
-        ax.plot_wireframe(X, Y, values[:, :, 0])
+        ax.plot_wireframe(X, Y, values[:, :, 0], linewidth=1)
         ax.set_xlabel("Dealer showing")
         ax.set_ylabel("Player sum")
         ax.set_title(f"no usable ace, {eps} episodes")
